@@ -28,6 +28,23 @@ struct SolderScopeCommands: Commands {
 
             Divider()
 
+            Button("Flip Horizontal") {
+                appState.flipHorizontal()
+            }
+            .keyboardShortcut("h", modifiers: [])
+
+            Button("Flip Vertical") {
+                appState.flipVertical()
+            }
+            .keyboardShortcut("v", modifiers: [])
+
+            Button("Rotate 90° Clockwise") {
+                appState.rotateClockwise()
+            }
+            .keyboardShortcut("]", modifiers: [])
+
+            Divider()
+
             Button("Recalibrate...") {
                 appState.isCalibrating = true
             }

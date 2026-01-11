@@ -2,7 +2,7 @@ import CoreImage
 import CoreVideo
 import Accelerate
 
-final class FrameProcessor {
+final class FrameProcessor: @unchecked Sendable {
     private let width: Int
     private let height: Int
     private var integrationLevel: IntegrationLevel
@@ -71,11 +71,20 @@ final class FrameProcessor {
             return CIImage(cvPixelBuffer: pixelBuffer)
         }
 
+        // Verify buffer dimensions match our expected size
+        let bufferWidth = CVPixelBufferGetWidth(pixelBuffer)
+        let bufferHeight = CVPixelBufferGetHeight(pixelBuffer)
+
+        if bufferWidth != width || bufferHeight != height {
+            // Dimensions don't match, skip integration
+            return CIImage(cvPixelBuffer: pixelBuffer)
+        }
+
         lock.lock()
         defer { lock.unlock() }
 
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
-        defer { CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly) }
+        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
 
         guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else {
             return CIImage(cvPixelBuffer: pixelBuffer)
@@ -84,6 +93,13 @@ final class FrameProcessor {
         let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
         let pixelCount = width * height
         let n = integrationLevel.rawValue
+
+        // Verify we have enough data
+        let requiredBytes = (height - 1) * bytesPerRow + width * 4
+        let bufferSize = CVPixelBufferGetDataSize(pixelBuffer)
+        if bufferSize < requiredBytes {
+            return CIImage(cvPixelBuffer: pixelBuffer)
+        }
 
         // Extract current frame into float arrays
         let ptr = baseAddress.assumingMemoryBound(to: UInt8.self)

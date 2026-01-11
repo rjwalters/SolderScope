@@ -21,7 +21,7 @@ final class CaptureManager: NSObject, ObservableObject {
     private let processingQueue = DispatchQueue(label: "com.solderscope.processing", qos: .userInitiated)
 
     // MARK: - Frame Processing
-    private var frameProcessor: FrameProcessor?
+    private nonisolated(unsafe) var frameProcessor: FrameProcessor?
     private var integrationLevel: IntegrationLevel = .one
 
     // MARK: - FPS Tracking
@@ -58,11 +58,14 @@ final class CaptureManager: NSObject, ObservableObject {
             position: .unspecified
         )
 
-        let devices = discoverySession.devices
+        let allDevices = discoverySession.devices
+        let hasExternalCamera = allDevices.contains { $0.deviceType == .external }
+
+        let devices = allDevices
             .filter { device in
                 // Prefer external cameras (USB microscopes)
                 // Include built-in only as fallback
-                device.deviceType == .external || devices.allSatisfy { $0.deviceType != .external }
+                device.deviceType == .external || !hasExternalCamera
             }
             .map { CameraDevice(device: $0) }
 

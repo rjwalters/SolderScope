@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "SolderScope",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v14)
     ],
     products: [
         .executable(
@@ -17,10 +17,7 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "SolderScope",
-            path: "SolderScope",
-            resources: [
-                .process("Resources")
-            ]
+            path: "SolderScope"
         )
     ]
 )

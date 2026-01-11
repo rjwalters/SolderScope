@@ -28,7 +28,8 @@ struct ContentView: View {
                             calibrationManager: appState.calibrationManager,
                             cameraID: appState.selectedCamera?.id ?? "",
                             resolution: appState.currentResolution,
-                            zoomFactor: appState.viewTransform.zoomFactor
+                            zoomFactor: appState.viewTransform.zoomFactor,
+                            onDelete: { appState.deleteCurrentCalibration() }
                         )
                         .padding(.leading, 16)
                         .padding(.bottom, 16)
@@ -111,6 +112,35 @@ struct ToolbarView: View {
             }
             .buttonStyle(ToolbarButtonStyle(isActive: appState.isScaleBarVisible))
             .help("Toggle scale bar (B)")
+
+            Divider()
+                .frame(height: 24)
+
+            // Flip horizontal
+            Button(action: { appState.flipHorizontal() }) {
+                Image(systemName: "arrow.left.and.right.righttriangle.left.righttriangle.right")
+            }
+            .buttonStyle(ToolbarButtonStyle(isActive: appState.viewTransform.isFlippedHorizontally))
+            .help("Flip horizontal (H)")
+
+            // Flip vertical
+            Button(action: { appState.flipVertical() }) {
+                Image(systemName: "arrow.up.and.down.righttriangle.up.righttriangle.down")
+            }
+            .buttonStyle(ToolbarButtonStyle(isActive: appState.viewTransform.isFlippedVertically))
+            .help("Flip vertical (V)")
+
+            // Rotate clockwise
+            Button(action: { appState.rotateClockwise() }) {
+                HStack(spacing: 2) {
+                    Image(systemName: "rotate.right")
+                    Text("\(appState.viewTransform.rotation.rawValue)°")
+                        .font(.system(size: 10))
+                        .monospacedDigit()
+                }
+            }
+            .buttonStyle(ToolbarButtonStyle(isActive: appState.viewTransform.rotation != .none))
+            .help("Rotate 90° clockwise (])")
 
             Divider()
                 .frame(height: 24)
@@ -236,30 +266,32 @@ struct RecordingIndicator: View {
 
     var body: some View {
         VStack {
+            Spacer()
             HStack {
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 10, height: 10)
-                    .opacity(isBlinking ? 1 : 0.3)
-                    .animation(.easeInOut(duration: 0.5).repeatForever(), value: isBlinking)
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 8, height: 8)
+                        .opacity(isBlinking ? 1 : 0.3)
+                        .animation(.easeInOut(duration: 0.5).repeatForever(), value: isBlinking)
 
-                Text("REC")
-                    .font(.system(.caption, design: .monospaced, weight: .bold))
+                    Text("REC")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
 
-                Text(formatDuration(duration))
-                    .font(.system(.caption, design: .monospaced))
-                    .monospacedDigit()
+                    Text(formatDuration(duration))
+                        .font(.system(size: 11, design: .monospaced))
+                        .monospacedDigit()
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(Color.red.opacity(0.85))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .padding(.leading, 16)
+                .padding(.bottom, 16)
 
                 Spacer()
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Color.black.opacity(0.7))
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .padding(8)
-
-            Spacer()
         }
         .onAppear { isBlinking = true }
     }
@@ -306,10 +338,4 @@ struct ToolbarButtonStyle: ButtonStyle {
                     .fill(configuration.isPressed ? Color.gray.opacity(0.3) : Color.clear)
             )
     }
-}
-
-#Preview {
-    ContentView()
-        .environmentObject(AppState())
-        .frame(width: 1280, height: 720)
 }

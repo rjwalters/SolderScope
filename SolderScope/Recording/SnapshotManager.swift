@@ -10,7 +10,7 @@ final class SnapshotManager: ObservableObject {
 
     struct Configuration {
         var format: ImageFormat = .png
-        var outputDirectory: URL = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first!
+        var outputDirectory: URL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
         var includeOverlays: Bool = true
     }
 

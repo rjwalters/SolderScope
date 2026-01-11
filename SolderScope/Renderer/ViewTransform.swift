@@ -63,7 +63,7 @@ struct ViewTransform: Equatable {
 
     func viewToImage(point: CGPoint, imageSize: CGSize, viewSize: CGSize) -> CGPoint {
         let transform = applying(to: imageSize, in: viewSize)
-        guard let inverse = transform.inverted() else { return point }
+        let inverse = transform.inverted()
         return point.applying(inverse)
     }
 

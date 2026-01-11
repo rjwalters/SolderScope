@@ -7,12 +7,12 @@ final class RecordingManager: ObservableObject {
     @Published private(set) var isRecording: Bool = false
     @Published private(set) var duration: TimeInterval = 0
 
-    private var assetWriter: AVAssetWriter?
-    private var videoInput: AVAssetWriterInput?
-    private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
+    private nonisolated(unsafe) var assetWriter: AVAssetWriter?
+    private nonisolated(unsafe) var videoInput: AVAssetWriterInput?
+    private nonisolated(unsafe) var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
 
-    private var startTime: CMTime?
-    private var frameCount: Int64 = 0
+    private nonisolated(unsafe) var startTime: CMTime?
+    private nonisolated(unsafe) var frameCount: Int64 = 0
     private var durationTimer: Timer?
 
     private let recordingQueue = DispatchQueue(label: "com.solderscope.recording", qos: .userInitiated)
@@ -23,7 +23,7 @@ final class RecordingManager: ObservableObject {
         var codec: AVVideoCodecType = .h264
         var bitrate: Int = 10_000_000 // 10 Mbps
         var keyFrameInterval: Int = 30
-        var outputDirectory: URL = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first!
+        var outputDirectory: URL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
     }
 
     private var configuration = Configuration()
@@ -141,7 +141,7 @@ final class RecordingManager: ObservableObject {
         self.frameCount = 0
     }
 
-    private func finalizeRecording() {
+    private nonisolated func finalizeRecording() {
         guard let writer = assetWriter else { return }
 
         videoInput?.markAsFinished()

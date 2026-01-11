@@ -154,6 +154,21 @@ final class AppState: ObservableObject {
         Logger.app.debug("View reset")
     }
 
+    func flipHorizontal() {
+        viewTransform.toggleHorizontalFlip()
+        Logger.app.debug("Horizontal flip: \(self.viewTransform.isFlippedHorizontally)")
+    }
+
+    func flipVertical() {
+        viewTransform.toggleVerticalFlip()
+        Logger.app.debug("Vertical flip: \(self.viewTransform.isFlippedVertically)")
+    }
+
+    func rotateClockwise() {
+        viewTransform.rotateClockwise()
+        Logger.app.debug("Rotation: \(self.viewTransform.rotation.rawValue)°")
+    }
+
     func cancelCalibration() {
         isCalibrating = false
         if calibrationManager.getCalibration(for: selectedCamera?.id ?? "", resolution: currentResolution) == nil {
@@ -176,6 +191,14 @@ final class AppState: ObservableObject {
         calibrationManager.saveCalibration(calibration)
         isCalibrating = false
         Logger.app.info("Calibration saved: \(micronsPerPixel) µm/px")
+    }
+
+    func deleteCurrentCalibration() {
+        guard let camera = selectedCamera else { return }
+        calibrationManager.deleteCalibration(for: camera.id, resolution: currentResolution)
+        isScaleBarVisible = false
+        settingsStore.isScaleBarVisible = false
+        Logger.app.info("Calibration deleted")
     }
 }
 

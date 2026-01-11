@@ -5,6 +5,9 @@ struct ScaleBarView: View {
     let cameraID: String
     let resolution: CGSize
     let zoomFactor: CGFloat
+    var onDelete: (() -> Void)?
+
+    @State private var showDeleteConfirmation = false
 
     private var scaleBar: ScaleBar? {
         guard let calibration = calibrationManager.getCalibration(for: cameraID, resolution: resolution) else {
@@ -33,10 +36,26 @@ struct ScaleBarView: View {
                     .font(.system(.caption, design: .monospaced, weight: .semibold))
                     .foregroundColor(.white)
                     .shadow(color: .black, radius: 1, x: 0, y: 1)
+
+                Button(action: { showDeleteConfirmation = true }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 4)
             }
             .padding(8)
             .background(Color.black.opacity(0.4))
             .clipShape(RoundedRectangle(cornerRadius: 6))
+            .alert("Delete Calibration", isPresented: $showDeleteConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    onDelete?()
+                }
+            } message: {
+                Text("Are you sure you want to delete the calibration for this camera and resolution?")
+            }
         } else {
             Text("Not calibrated")
                 .font(.caption)

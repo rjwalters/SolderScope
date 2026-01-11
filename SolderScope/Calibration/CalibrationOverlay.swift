@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct CalibrationOverlay: View {
     @EnvironmentObject var appState: AppState
@@ -10,9 +11,12 @@ struct CalibrationOverlay: View {
 
     var body: some View {
         ZStack {
-            // Semi-transparent background
+            // Semi-transparent background that captures escape key
             Color.black.opacity(0.5)
                 .ignoresSafeArea()
+                .onExitCommand {
+                    appState.cancelCalibration()
+                }
 
             // Drawing canvas
             CalibrationCanvas(
@@ -42,10 +46,10 @@ struct CalibrationOverlay: View {
 
                 Spacer()
 
-                // Instructions or length input
+                // Instructions or length presets
                 if !calibrationLine.isComplete {
                     InstructionsView()
-                } else if !showLengthInput {
+                } else {
                     LengthPresetView(
                         lineLength: calibrationLine.lengthPixels ?? 0,
                         onPresetSelected: { preset in
@@ -60,21 +64,22 @@ struct CalibrationOverlay: View {
                             calibrationLine.reset()
                         }
                     )
-                } else {
-                    CustomLengthInput(
-                        lengthText: $customLengthText,
-                        onSubmit: {
-                            if let microns = parseLength(customLengthText) {
-                                completeCalibration(microns: microns)
-                            }
-                        },
-                        onCancel: {
-                            showLengthInput = false
-                            selectedPreset = nil
-                        }
-                    )
                 }
             }
+        }
+        .sheet(isPresented: $showLengthInput) {
+            CustomLengthInputSheet(
+                lengthText: $customLengthText,
+                onSubmit: {
+                    if let microns = parseLength(customLengthText) {
+                        completeCalibration(microns: microns)
+                    }
+                },
+                onCancel: {
+                    showLengthInput = false
+                    selectedPreset = nil
+                }
+            )
         }
     }
 
@@ -335,20 +340,22 @@ struct LengthPresetView: View {
     }
 }
 
-struct CustomLengthInput: View {
+struct CustomLengthInputSheet: View {
     @Binding var lengthText: String
     let onSubmit: () -> Void
     let onCancel: () -> Void
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Enter known length")
+            Text("Enter Known Length")
                 .font(.headline)
 
-            TextField("e.g., 2.54 mm", text: $lengthText)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 200)
-                .onSubmit(onSubmit)
+            AutoFocusTextField(
+                text: $lengthText,
+                placeholder: "e.g., 2.54 mm",
+                onSubmit: onSubmit
+            )
+            .frame(width: 200, height: 22)
 
             Text("Supports: mm, µm, cm, in")
                 .font(.caption)
@@ -365,14 +372,63 @@ struct CustomLengthInput: View {
             }
         }
         .padding(24)
-        .background(Color.black.opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .padding()
+        .frame(minWidth: 280)
     }
 }
 
-#Preview {
-    CalibrationOverlay()
-        .environmentObject(AppState())
-        .frame(width: 800, height: 600)
+// MARK: - Auto-focusing TextField
+
+struct AutoFocusTextField: NSViewRepresentable {
+    @Binding var text: String
+    let placeholder: String
+    let onSubmit: () -> Void
+
+    func makeNSView(context: Context) -> NSTextField {
+        let textField = NSTextField()
+        textField.placeholderString = placeholder
+        textField.delegate = context.coordinator
+        textField.bezelStyle = .roundedBezel
+        textField.font = .systemFont(ofSize: 13)
+        textField.stringValue = text
+        return textField
+    }
+
+    func updateNSView(_ nsView: NSTextField, context: Context) {
+        if nsView.stringValue != text {
+            nsView.stringValue = text
+        }
+
+        // Focus when the view appears in a window
+        if let window = nsView.window, window.firstResponder != nsView, nsView.currentEditor() == nil {
+            DispatchQueue.main.async {
+                window.makeFirstResponder(nsView)
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, NSTextFieldDelegate {
+        let parent: AutoFocusTextField
+
+        init(_ parent: AutoFocusTextField) {
+            self.parent = parent
+        }
+
+        func controlTextDidChange(_ obj: Notification) {
+            guard let textField = obj.object as? NSTextField else { return }
+            parent.text = textField.stringValue
+        }
+
+        func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                parent.onSubmit()
+                return true
+            }
+            return false
+        }
+    }
 }
+
