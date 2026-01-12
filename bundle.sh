@@ -38,9 +38,41 @@ if [ -f "SolderScope/Metadata/AppIcon.icns" ]; then
 fi
 
 echo "Bundle created at: $BUNDLE_DIR"
+
+# Create DMG
 echo ""
-echo "To install, run:"
+echo "Creating DMG..."
+
+DMG_NAME="$APP_NAME-v0.1.0"
+DMG_DIR="$BUILD_DIR/dmg"
+DMG_PATH="$BUILD_DIR/$DMG_NAME.dmg"
+
+# Clean up any previous DMG artifacts
+rm -rf "$DMG_DIR"
+rm -f "$DMG_PATH"
+
+# Create DMG staging directory
+mkdir -p "$DMG_DIR"
+cp -r "$BUNDLE_DIR" "$DMG_DIR/"
+
+# Create Applications symlink
+ln -s /Applications "$DMG_DIR/Applications"
+
+# Create DMG using hdiutil
+hdiutil create -volname "$APP_NAME" \
+    -srcfolder "$DMG_DIR" \
+    -ov -format UDZO \
+    "$DMG_PATH"
+
+# Clean up staging directory
+rm -rf "$DMG_DIR"
+
+echo ""
+echo "DMG created at: $DMG_PATH"
+echo ""
+echo "To install:"
+echo "  1. Open the DMG: open \"$DMG_PATH\""
+echo "  2. Drag SolderScope to Applications"
+echo ""
+echo "Or install directly:"
 echo "  cp -r \"$BUNDLE_DIR\" /Applications/"
-echo ""
-echo "Or open directly:"
-echo "  open \"$BUNDLE_DIR\""
