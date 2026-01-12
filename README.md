@@ -50,22 +50,43 @@ SolderScope supports one-time calibration for accurate scale bars:
 
 ## Requirements
 
-- macOS 13.0+ (Ventura or later)
+- macOS 14.0+ (Sonoma or later)
 - USB microscope (UVC-compatible)
 - Camera access permission
 
-## Building
+## Installation
+
+### From DMG (Recommended)
+
+1. Download the latest `.dmg` from [Releases](../../releases)
+2. Open the DMG and drag SolderScope to Applications
+3. **First launch:** Right-click the app and select "Open" (see note below)
+
+### Build from Source
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/SolderScope.git
+# Clone and build
+git clone https://github.com/rjwalters/SolderScope.git
 cd SolderScope
+./bundle.sh
 
-# Open in Xcode
-open SolderScope.xcodeproj
-
-# Build and run (Cmd+R)
+# Install
+cp -r .build/release/SolderScope.app /Applications/
 ```
+
+### Code Signing Note
+
+SolderScope is not signed with an Apple Developer ID certificate or notarized. On first launch, macOS Gatekeeper will block the app.
+
+**To open an unsigned app:**
+1. Right-click (or Control-click) on SolderScope.app
+2. Select "Open" from the context menu
+3. Click "Open" in the dialog that appears
+
+You only need to do this once. After the first launch, macOS remembers your choice.
+
+**Why isn't it signed?**
+Code signing requires a paid Apple Developer account ($99/year). For an open-source project, we've chosen to keep it free and let users bypass Gatekeeper manually.
 
 ## Architecture
 
