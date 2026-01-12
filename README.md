@@ -6,6 +6,8 @@ A native macOS application for USB microscope viewing, optimized for soldering a
 
 SolderScope provides a low-latency live view with smooth zoom/pan controls, scale bar overlays with one-time calibration, and essential capture features—all designed for bench work with USB microscopes.
 
+![SolderScope Screenshot](SolderScope.png)
+
 ## Features
 
 ### Core Features
