@@ -114,19 +114,6 @@ struct Calibration: Codable {
 }
 ```
 
-## Development Phases
-
-See [MILESTONES.md](MILESTONES.md) for detailed implementation phases:
-
-1. **Phase 0** — Project scaffolding
-2. **Phase 1** — Camera capture + live preview
-3. **Phase 2** — Zoom/pan controls
-4. **Phase 3** — Scale bar + calibration
-5. **Phase 4** — Snapshots + freeze frame
-6. **Phase 5** — Video recording
-7. **Phase 6** — Frame integration
-8. **Phase 7** — Measurement tools (stretch)
-
 ## Non-Goals (v1)
 
 - Hardware automation (motorized stages, focus)
