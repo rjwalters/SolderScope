@@ -5,7 +5,6 @@ struct CalibrationOverlay: View {
     @EnvironmentObject var appState: AppState
     @State private var calibrationLine = CalibrationLine()
     @State private var isDrawing = false
-    @State private var showLengthInput = false
     @State private var selectedPreset: CalibrationPreset?
     @State private var customLengthText = ""
 
@@ -55,7 +54,10 @@ struct CalibrationOverlay: View {
                         onPresetSelected: { preset in
                             selectedPreset = preset
                             if preset == .custom {
-                                showLengthInput = true
+                                // Show alert asynchronously to avoid SwiftUI update issues
+                                DispatchQueue.main.async {
+                                    showCustomLengthAlert()
+                                }
                             } else if let microns = preset.lengthMicrons {
                                 completeCalibration(microns: microns)
                             }
@@ -67,20 +69,36 @@ struct CalibrationOverlay: View {
                 }
             }
         }
-        .sheet(isPresented: $showLengthInput) {
-            CustomLengthInputSheet(
-                lengthText: $customLengthText,
-                onSubmit: {
-                    if let microns = parseLength(customLengthText) {
-                        completeCalibration(microns: microns)
-                    }
-                },
-                onCancel: {
-                    showLengthInput = false
-                    selectedPreset = nil
-                }
-            )
+    }
+
+    private func showCustomLengthAlert() {
+        let alert = NSAlert()
+        alert.messageText = "Enter Known Length"
+        alert.informativeText = "Supports: mm, µm, cm, in (default: mm)"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Apply")
+        alert.addButton(withTitle: "Cancel")
+
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        textField.placeholderString = "e.g., 2.54 mm"
+        textField.stringValue = customLengthText
+        alert.accessoryView = textField
+
+        // Make text field first responder after alert is shown
+        DispatchQueue.main.async {
+            textField.becomeFirstResponder()
         }
+
+        let response = alert.runModal()
+
+        if response == .alertFirstButtonReturn {
+            customLengthText = textField.stringValue
+            if let microns = parseLength(customLengthText) {
+                completeCalibration(microns: microns)
+            }
+        }
+
+        selectedPreset = nil
     }
 
     private func completeCalibration(microns: Double) {
@@ -340,95 +358,4 @@ struct LengthPresetView: View {
     }
 }
 
-struct CustomLengthInputSheet: View {
-    @Binding var lengthText: String
-    let onSubmit: () -> Void
-    let onCancel: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Enter Known Length")
-                .font(.headline)
-
-            AutoFocusTextField(
-                text: $lengthText,
-                placeholder: "e.g., 2.54 mm",
-                onSubmit: onSubmit
-            )
-            .frame(width: 200, height: 22)
-
-            Text("Supports: mm, µm, cm, in")
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            HStack(spacing: 12) {
-                Button("Cancel", action: onCancel)
-                    .keyboardShortcut(.escape, modifiers: [])
-
-                Button("Apply", action: onSubmit)
-                    .keyboardShortcut(.return, modifiers: [])
-                    .buttonStyle(.borderedProminent)
-                    .disabled(lengthText.isEmpty)
-            }
-        }
-        .padding(24)
-        .frame(minWidth: 280)
-    }
-}
-
-// MARK: - Auto-focusing TextField
-
-struct AutoFocusTextField: NSViewRepresentable {
-    @Binding var text: String
-    let placeholder: String
-    let onSubmit: () -> Void
-
-    func makeNSView(context: Context) -> NSTextField {
-        let textField = NSTextField()
-        textField.placeholderString = placeholder
-        textField.delegate = context.coordinator
-        textField.bezelStyle = .roundedBezel
-        textField.font = .systemFont(ofSize: 13)
-        textField.stringValue = text
-        return textField
-    }
-
-    func updateNSView(_ nsView: NSTextField, context: Context) {
-        if nsView.stringValue != text {
-            nsView.stringValue = text
-        }
-
-        // Focus when the view appears in a window
-        if let window = nsView.window, window.firstResponder != nsView, nsView.currentEditor() == nil {
-            DispatchQueue.main.async {
-                window.makeFirstResponder(nsView)
-            }
-        }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, NSTextFieldDelegate {
-        let parent: AutoFocusTextField
-
-        init(_ parent: AutoFocusTextField) {
-            self.parent = parent
-        }
-
-        func controlTextDidChange(_ obj: Notification) {
-            guard let textField = obj.object as? NSTextField else { return }
-            parent.text = textField.stringValue
-        }
-
-        func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                parent.onSubmit()
-                return true
-            }
-            return false
-        }
-    }
-}
 
